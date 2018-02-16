@@ -96,7 +96,7 @@ if __name__ == '__main__':
             pass
     c.executemany('INSERT INTO full_attr (time, status, team_1, team_2, cof_bet365_1, cof_bet365_x, cof_bet365_2, cof_one_x_bet_1, cof_one_x_bet_x, cof_one_x_bet_2, cof_bwin_1, cof_bwin_x, cof_bwin_2) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', data_2)
 
-    conn.commit()
+    # conn.commit()
     c.close()
     conn.close()
 
