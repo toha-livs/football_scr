@@ -4,17 +4,45 @@ import sqlite3
 from selenium.common.exceptions import NoSuchElementException, UnexpectedAlertPresentException
 
 
-def get_attr(cheng_match, cheng_table):
-    driver.get('https://www.myscore.com.ua')
-    try:
-        match_id = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']').get_attribute('id')
-    except UnexpectedAlertPresentException:
-        Alert(driver).dismiss()
-        match_id = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']').get_attribute('id')
-    time = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']/td[2]').text
-    status = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']/td[3]').text
-    team_1 = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']/td[4]').text
-    team_2 = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']/td[6]').text
+def insert_db(data_2):
+    conn = sqlite3.connect('result.sqlite')
+    c = conn.cursor()
+    c.executemany('INSERT INTO full_attr (time, status, team_1, team_2, cof_bet365_1, cof_bet365_x, cof_bet365_2, cof_one_x_bet_1, cof_one_x_bet_x, cof_one_x_bet_2, cof_bwin_1, cof_bwin_x, cof_bwin_2) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', data_2)
+    conn.commit()
+    c.close()
+    conn.close()
+
+
+def start_scan():
+    data_2 = []
+    data = []
+    cheng_match = 1                        # c какого матча в данном столе начнет считывать
+    cheng_table = 1                        # с какого стола начнет считывать
+    for go in range(5):                    #  сколько строк будет проверять
+        print(cheng_match)
+        try:
+            res = get_attr(cheng_match, cheng_table)
+            data.append(res[0])
+        except NoSuchElementException:
+            cheng_table += 1
+            cheng_match = 0
+            pass
+        except AttributeError:
+            pass
+        cheng_match += 1
+    for i in data:
+        try:
+            data_2.append((i[0], i[1], i[2],
+                           i[3], i[4], i[5],
+                           i[6], i[7], i[8],
+                           i[9], i[10], i[11],
+                           i[12]))
+        except IndexError:
+            pass
+    return data_2
+
+
+def get_cof(match_id):
     driver.get('https://www.myscore.com.ua/match/' + match_id[4:] + '/#match-summary')
     driver.find_element_by_xpath('//*[@id="a-match-odds-comparison"]').click()
     try:
@@ -36,71 +64,32 @@ def get_attr(cheng_match, cheng_table):
                 pass
     except NoSuchElementException:
         pass
+    return [cof_bet365_1, cof_bet365_x, cof_bet365_2, cof_one_x_bet_1, cof_one_x_bet_x, cof_one_x_bet_2, cof_bwin_1, cof_bwin_x, cof_bwin_2]
+
+
+def get_attr(cheng_match, cheng_table):
+    driver.get('https://www.myscore.com.ua')
     try:
-        trt = {'time': time,
-            'status': status,
-            'team_1': team_1,
-            'team_2': team_2,
-            'cof_bet365_1': cof_bet365_1,
-            'cof_bet365_x': cof_bet365_x,
-            'cof_bet365_2': cof_bet365_2,
-            'cof_one_x_bet_1': cof_one_x_bet_1,
-            'cof_one_x_bet_x': cof_one_x_bet_x,
-            'cof_one_x_bet_2': cof_one_x_bet_2,
-            'cof_bwin_1': cof_bwin_1,
-            'cof_bwin_x': cof_bwin_x,
-            'cof_bwin_2': cof_bwin_2
-            }
+        match_id = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']').get_attribute('id')
+    except UnexpectedAlertPresentException:
+        Alert(driver).dismiss()
+        match_id = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']').get_attribute('id')
+    time = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']/td[2]').text
+    status = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']/td[3]').text
+    team_1 = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']/td[4]').text
+    team_2 = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(cheng_table) + ']/tbody/tr[' + str(cheng_match) + ']/td[6]').text
+    try:
+        trt = [time, status, team_1, team_2] + get_cof(match_id)
     except UnboundLocalError:
         return [(), cheng_table]
     print(trt)
     return [trt, cheng_table]
 
 
-data = []
-cheng_match = 1
-cheng_table = 1
-
-
 if __name__ == '__main__':
     driver = webdriver.Chrome()
     driver.implicitly_wait(5)
-    for go in range(3):
-        print(cheng_match)
-        try:
-            res = get_attr(cheng_match, cheng_table)
-            data.append(res[0])
-        except NoSuchElementException:
-            cheng_table += 1
-            cheng_match = 0
-            pass
-        except AttributeError:
-            pass
-        cheng_match += 1
+    insert_db(start_scan())
     driver.quit()
-    conn = sqlite3.connect('result.sqlite')
-    c = conn.cursor()
-    for i in data:
-        c.execute('''INSERT INTO users (time, status, team1, team2,cofBet365_1,cofBet365_x, cofBet365_2, cof1xBet_1, cof1xBet_x, cof1xBet_2, cofBwin_1, cofBwin_x, cofBwin_2) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''.format(i['time'], i['status'], i['team_1'], i['team_2'], i['cof_bet365_1'],  i['cof_bet365_x'], i['cof_bet365_2'], i['cof_one_x_bet_1'], i['cof_one_x_bet_x'], i['cof_one_x_bet_2'], i['cof_bwin_1'], i['cof_bwin_x'], i['cof_bwin_2']))
-    # c.execute('''CREATE TABLE users (id int auto_increment primary key,
-    #                                     time varchar,
-    #                                     status varchar,
-    #                                     team1 varchar,
-    #                                     team2 varchar,
-    #                                     cofBet365_1 varchar,
-    #                                     cofBet365_x varchar,
-    #                                     cofBet365_2 varchar,
-    #                                     cof1xBet_1 varchar,
-    #                                     cof1xBet_x varchar,
-    #                                     cof1xBet_2 varchar,
-    #                                     cofBwin_1 varchar,
-    #                                     cofBwin_x varchar,
-    #                                     cofBwin_2 varchar
-    #
-    #      )''')
-    conn.commit()
-    c.close()
-    conn.close()
-    # for x in data:
-    #     print(x)
+
 
