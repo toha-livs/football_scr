@@ -15,13 +15,13 @@ def delete_from_all_attr():                        # удалить все за�
 def inser_data(data):                              # добавить данные в БД
     conn = sqlite3.connect('/home/tohalivs/python_study/django/football/db.sqlite3')
     c = conn.cursor()
-    c.execute("INSERT INTO football_allattr(time, status, team_1, team_2, bookmaker, type, coef) VALUES (?,?,?,?,?,?,?)", data)
+    c.execute("INSERT INTO football_allattr(time, status, team_1, team_2, bookmaker, type, coef, match_id) VALUES (?,?,?,?,?,?,?,?)", data)
     conn.commit()
     c.close()
     conn.close()
 
 
-def get_cof_and_insert(match_id, time, status, team_1, team_2):           # получить коэффициенты
+def get_cof_and_insert(match_id, time, status, team_1, team_2, matchId):           # получить коэффициенты
     driver.get('https://www.myscore.com.ua/match/' + match_id[4:] + '/#odds-comparison;1x2-odds;full-time')
     table = 1
     cofe = 2
@@ -36,7 +36,7 @@ def get_cof_and_insert(match_id, time, status, team_1, team_2):           # по
                     typee = 'x'
                 else:
                     typee = '2'
-                data = [time, status, team_1, team_2, name_bookmaker, typee, cof]
+                data = [time, status, team_1, team_2, name_bookmaker, typee, cof, matchId]
                 inser_data(data)
                 if cofe == 4:
                     cofe = 1
@@ -49,6 +49,7 @@ def get_cof_and_insert(match_id, time, status, team_1, team_2):           # по
 def get_match_attr():           # получить данные матча
     table_1 = 1
     match_1 = 1
+    matchId = 1
     while True:
         try:
             while True:
@@ -58,8 +59,9 @@ def get_match_attr():           # получить данные матча
                 status = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(table_1) + ']/tbody/tr[' + str(match_1) + ']/td[3]').text
                 team_1 = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(table_1) + ']/tbody/tr[' + str(match_1) + ']/td[4]').text
                 team_2 = driver.find_element_by_xpath('//*[@id="fs"]/div/table[' + str(table_1) + ']/tbody/tr[' + str(match_1) + ']/td[6]').text
-                get_cof_and_insert(match_id, time, status, team_1, team_2)
+                get_cof_and_insert(match_id, time, status, team_1, team_2, matchId)
                 match_1 += 1
+                matchId += 1
         except NoSuchElementException:
             table_1 += 1
             match_1 = 1
